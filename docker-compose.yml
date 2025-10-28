@@ -1,25 +1,65 @@
 services:
   api-gateway:
     container_name: api_gateway
-    build: 
+    build:
       context: .
       dockerfile: ./apps/api-gateway/Dockerfile
+    env_file: .env
     restart: always
     ports:
-      - "3001:3001"
+       - "3001:3001"
     networks:
       - app_network
 
   auth-service:
     container_name: auth_service
-    build: 
+    build:
       context: .
       dockerfile: ./apps/auth-service/Dockerfile
+    env_file: .env
     restart: always
     ports:
       - "3002:3002"
     networks:
       - app_network
+    # Postgres Database
+  db:
+    image: postgres:17.5-alpine3.21
+    container_name: db
+    attach: false
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    attach: false
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app_network
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes: ["rabbitmq_data:/var/lib/rabbitmq"]
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
 
 networks:
   app_network:

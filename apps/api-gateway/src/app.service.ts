@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  getHealth() {
+    return [
+      {
+        status: process.env.RABBITMQ_URL,
+        timestamp: new Date().toISOString(),
+        service: 'api-gateway',
+      },
+    ];
   }
 }
