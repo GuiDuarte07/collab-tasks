@@ -1,0 +1,26 @@
+services:
+  api-gateway:
+    container_name: api_gateway
+    build: 
+      context: .
+      dockerfile: ./apps/api-gateway/Dockerfile
+    restart: always
+    ports:
+      - "3001:3001"
+    networks:
+      - app_network
+
+  auth-service:
+    container_name: auth_service
+    build: 
+      context: .
+      dockerfile: ./apps/auth-service/Dockerfile
+    restart: always
+    ports:
+      - "3002:3002"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

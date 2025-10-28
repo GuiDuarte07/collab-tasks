@@ -11,14 +11,14 @@ RUN corepack enable
 WORKDIR /app
 
 # -------------------------------------
-# 2 - Dependência do Turbo (para podar dependências)
+# 2 -  Dependência do Turbo (para podar dependências)
 # -------------------------------------
 FROM base AS pruner
 RUN apk add --no-cache libc6-compat
 RUN pnpm add -g turbo
 
 COPY . .
-RUN turbo prune --scope=api-gateway --docker
+RUN turbo prune --scope=auth-service --docker
 
 # -------------------------------------
 # 3 - Instalador (instala dependências apenas do app e seus deps)
@@ -48,7 +48,7 @@ COPY --from=installer /app ./
 COPY --from=pruner /app/out/full/ ./
 
 # Compila a aplicação (usa o turbo build do monorepo)
-RUN pnpm turbo run build --filter=api-gateway
+RUN pnpm turbo run build --filter=auth-service
 
 # -------------------------------------
 # 5 - Runner (imagem final e leve)
@@ -58,15 +58,15 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Copia apenas o necessário para runtime
-COPY --from=builder /app/apps/api-gateway/dist ./dist
-COPY --from=builder /app/apps/api-gateway/package.json ./
+COPY --from=builder /app/apps/auth-service/dist ./dist
+COPY --from=builder /app/apps/auth-service/package.json ./
 
 COPY --from=installer /app/node_modules ./node_modules
 
 # Segurança: evita que o app rode como root
 USER node
 
-EXPOSE 3001
+EXPOSE 3002
 
 # Define o comando final de execução
 CMD ["node", "dist/main.js"]
