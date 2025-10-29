@@ -5,6 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "dependencies": {
+    "@repo/shared-types": "workspace:*"
+  },
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",

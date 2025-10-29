@@ -22,6 +22,11 @@ async function bootstrap() {
 
   await app.listen(port);
   console.log('🚀 API Gateway running on http://localhost:3001');
+  console.log(
+    '[api-gateway] RabbitMQ URL:',
+    process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672',
+  );
+  console.log('[api-gateway] Swagger docs:', 'http://localhost:3001/api/docs');
 }
 
 bootstrap().catch((err) => {

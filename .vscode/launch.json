@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/launch.json",
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach: API Gateway (9229)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "protocol": "inspector",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "resolveSourceMapLocations": ["**", "!**/node_modules/**"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Attach: Auth Service (9230)",
+      "type": "node",
+      "request": "attach",
+      "port": 9230,
+      "restart": true,
+      "protocol": "inspector",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "resolveSourceMapLocations": ["**", "!**/node_modules/**"],
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Attach: Both (Gateway + Auth)",
+      "configurations": [
+        "Attach: API Gateway (9229)",
+        "Attach: Auth Service (9230)"
+      ]
+    }
+  ]
+}

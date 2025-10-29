@@ -1,4 +1,10 @@
 import {
+  AuthResponse,
+  RefreshTokenResponse,
+  Result,
+  AppError,
+} from '@repo/shared-types';
+import {
   Controller,
   Post,
   Body,
@@ -6,7 +12,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import { LoginDto } from './dto/login.dto';
@@ -46,21 +52,23 @@ export class AuthController {
       },
     },
   })
-  async register(@Body() registerDto: RegisterDto) {
+  async register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
     try {
       const result = await firstValueFrom(
-        this.authClient.send('auth.register', registerDto),
+        this.authClient.send<Result<AuthResponse>>(
+          'auth.register',
+          registerDto,
+        ),
       );
 
-      return result;
+      if (result?.ok) return result.data as AuthResponse;
+
+      throw new HttpException(result.error, result.error.statusCode);
     } catch (error: unknown) {
-      if (error instanceof RpcException) {
-        const rpcError = error.getError();
-        throw new HttpException(
-          typeof rpcError === 'string' ? rpcError : 'Registration failed',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+      const appErr = new AppError(error, {
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+      throw new HttpException(appErr, appErr.statusCode);
     }
   }
 
@@ -93,17 +101,21 @@ export class AuthController {
       },
     },
   })
-  async login(@Body() loginDto: LoginDto) {
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     try {
       const result = await firstValueFrom(
-        this.authClient.send('auth.login', loginDto),
+        this.authClient.send<Result<AuthResponse>>('auth.login', loginDto),
       );
-      return result;
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Login failed',
-        error.status || HttpStatus.UNAUTHORIZED,
-      );
+      if (result?.ok) {
+        return result.data as AuthResponse;
+      }
+
+      throw new HttpException(result.error, result.error.statusCode);
+    } catch (error: unknown) {
+      const appErr = new AppError(error, {
+        statusCode: HttpStatus.UNAUTHORIZED,
+      });
+      throw new HttpException(appErr, appErr.statusCode);
     }
   }
 
@@ -130,17 +142,26 @@ export class AuthController {
       },
     },
   })
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+  async refresh(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<RefreshTokenResponse> {
     try {
       const result = await firstValueFrom(
-        this.authClient.send('auth.refresh', refreshTokenDto),
+        this.authClient.send<Result<RefreshTokenResponse>>(
+          'auth.refresh',
+          refreshTokenDto,
+        ),
       );
-      return result;
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Token refresh failed',
-        error.status || HttpStatus.UNAUTHORIZED,
-      );
+      if (result.ok) {
+        return result.data as RefreshTokenResponse;
+      }
+
+      throw new HttpException(result.error, result.error.statusCode);
+    } catch (error: unknown) {
+      const appErr = new AppError(error, {
+        statusCode: HttpStatus.UNAUTHORIZED,
+      });
+      throw new HttpException(appErr, appErr.statusCode);
     }
   }
 }
