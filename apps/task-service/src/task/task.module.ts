@@ -2,18 +2,16 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
-import { TaskEntity, TaskAssignment } from '../entities';
+import { CommentService } from './comment.service';
+import { TaskEntity, TaskAssignment, TaskComment } from '../entities';
 import { databaseConfig } from '../config/database.config';
 
 @Module({
   imports: [
-    // Configuração global do TypeORM
     TypeOrmModule.forRoot(databaseConfig),
-
-    // Registra os repositories que serão usados globalmente
-    TypeOrmModule.forFeature([TaskEntity, TaskAssignment]),
+    TypeOrmModule.forFeature([TaskEntity, TaskAssignment, TaskComment]),
   ],
   controllers: [TaskController],
-  providers: [TaskService],
+  providers: [TaskService, CommentService],
 })
 export class TaskModule {}

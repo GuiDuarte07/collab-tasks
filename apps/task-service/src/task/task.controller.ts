@@ -1,16 +1,22 @@
 import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TaskService } from './task.service';
+import { CommentService } from './comment.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { Result } from '@repo/shared-types';
 import { TaskEntity } from '../entities/task.entity';
+import { TaskComment } from '../entities/task-comment.entity';
 
 @Controller()
 export class TaskController {
   private readonly logger = new Logger(TaskController.name);
 
-  constructor(private readonly taskService: TaskService) {}
+  constructor(
+    private readonly taskService: TaskService,
+    private readonly commentService: CommentService,
+  ) {}
 
   @MessagePattern('task.create')
   async create(
@@ -60,5 +66,47 @@ export class TaskController {
       `RMQ: Recebida requisição task.delete (id: ${payload.id}, usuário: ${payload.userId})`,
     );
     return this.taskService.remove(payload.id, payload.userId);
+  }
+
+  @MessagePattern('task.comment.create')
+  async createComment(
+    @Payload()
+    payload: {
+      taskId: string;
+      userId: string;
+      data: CreateCommentDto;
+    },
+  ): Promise<Result<TaskComment>> {
+    this.logger.log(
+      `RMQ: Recebida requisição task.comment.create (tarefa: ${payload.taskId}, usuário: ${payload.userId})`,
+    );
+    return this.commentService.create(
+      payload.taskId,
+      payload.userId,
+      payload.data,
+    );
+  }
+
+  @MessagePattern('task.comment.list')
+  async listComments(
+    @Payload()
+    payload: {
+      taskId: string;
+      userId: string;
+      page: number;
+      size: number;
+    },
+  ): Promise<
+    Result<{ data: TaskComment[]; total: number; page: number; size: number }>
+  > {
+    this.logger.log(
+      `RMQ: Recebida requisição task.comment.list (tarefa: ${payload.taskId}, usuário: ${payload.userId}, página: ${payload.page}, tamanho: ${payload.size})`,
+    );
+    return this.commentService.findAll(
+      payload.taskId,
+      payload.userId,
+      payload.page,
+      payload.size,
+    );
   }
 }
