@@ -1,8 +1,7 @@
+import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
 import { TaskModule } from './task/task.module';
 
 @Module({
@@ -12,7 +11,6 @@ import { TaskModule } from './task/task.module';
       envFilePath: ['../../.env', '.env'],
       expandVariables: true,
     }),
-    AuthModule,
     TaskModule,
   ],
   controllers: [AppController],

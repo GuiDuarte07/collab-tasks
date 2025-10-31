@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { WinstonModule } from 'nest-winston';
 import { format, transports } from 'winston';
 import * as fs from 'node:fs';
@@ -18,7 +18,7 @@ async function bootstrap() {
 
   const logger = WinstonModule.createLogger({
     level: process.env.LOG_LEVEL ?? (isProd ? 'info' : 'debug'),
-    defaultMeta: { service: 'api-gateway' },
+    defaultMeta: { service: 'task-service' },
     transports: [
       new transports.Console({
         level: process.env.CONSOLE_LOG_LEVEL ?? (isProd ? 'info' : 'debug'),
@@ -41,37 +41,26 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { logger });
 
-  app.setGlobalPrefix('api');
+  const rmqUrl =
+    process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
+  const queue = 'task_queue';
 
-  // Swagger
-  const config = new DocumentBuilder()
-    .setTitle('Collab Task API')
-    .setDescription('Sistema de gerenciamento de tarefas colaborativo.')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Insira o token JWT',
-        in: 'header',
-      },
-      'bearer',
-    )
-    .build();
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rmqUrl],
+      queue,
+      queueOptions: { durable: false },
+    },
+  });
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  await app.startAllMicroservices();
 
-  const port = 3001;
-
+  const port = 3003;
   await app.listen(port);
-  app.getHttpAdapter().getInstance();
 
-  // Logs informativos via Winston
-  logger.log(`🚀 API Gateway rodando em http://localhost:${port}`, 'Bootstrap');
-  logger.log(`Swagger docs: http://localhost:${port}/api/docs`, 'Bootstrap');
+  logger.log(`🚀 task-service HTTP em http://localhost:${port}`, 'Bootstrap');
+  logger.log(`RabbitMQ Queue: ${queue}`, 'Bootstrap');
 }
 
 bootstrap().catch((err) => {

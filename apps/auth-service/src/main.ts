@@ -24,7 +24,6 @@ async function bootstrap() {
   await app.listen(port);
 
   console.log('[auth-service] HTTP listening on:', port);
-  console.log('[auth-service] RabbitMQ URL:', rmqUrl);
   console.log('[auth-service] RabbitMQ Queue:', queue);
 }
 

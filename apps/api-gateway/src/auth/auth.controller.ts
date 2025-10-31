@@ -61,7 +61,7 @@ export class AuthController {
         ),
       );
 
-      if (result?.ok) return result.data as AuthResponse;
+      if (result?.ok) return result.data;
 
       throw new HttpException(result.error, result.error.statusCode);
     } catch (error: unknown) {
@@ -107,7 +107,7 @@ export class AuthController {
         this.authClient.send<Result<AuthResponse>>('auth.login', loginDto),
       );
       if (result?.ok) {
-        return result.data as AuthResponse;
+        return result.data;
       }
 
       throw new HttpException(result.error, result.error.statusCode);
@@ -153,7 +153,7 @@ export class AuthController {
         ),
       );
       if (result.ok) {
-        return result.data as RefreshTokenResponse;
+        return result.data;
       }
 
       throw new HttpException(result.error, result.error.statusCode);
