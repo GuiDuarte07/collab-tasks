@@ -6,4 +6,5 @@ export class UpdateTaskDto {
   deadline?: Date | null;
   priority?: TaskPriority;
   status?: TaskStatus;
+  assignments?: Array<{ userId: string; role: string }>;
 }

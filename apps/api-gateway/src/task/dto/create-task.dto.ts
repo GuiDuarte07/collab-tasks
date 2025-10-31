@@ -8,6 +8,22 @@ import {
   MinLength,
 } from 'class-validator';
 import { TaskPriority, TaskStatus } from '../types';
+import { IsArray, IsUUID } from 'class-validator';
+
+class AssignmentInputDto {
+  @ApiProperty({ description: 'ID do usuário atribuído', format: 'uuid' })
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty({
+    description: 'Papel do usuário na tarefa',
+    example: 'assigned',
+  })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  role!: string;
+}
 
 export class CreateTaskDto {
   @ApiProperty({
@@ -43,4 +59,9 @@ export class CreateTaskDto {
   @IsOptional()
   @IsEnum(TaskStatus)
   status?: TaskStatus;
+
+  @ApiPropertyOptional({ type: [AssignmentInputDto] })
+  @IsOptional()
+  @IsArray()
+  assignments?: AssignmentInputDto[];
 }

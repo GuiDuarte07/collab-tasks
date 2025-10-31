@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsISO8601,
@@ -6,8 +6,25 @@ import {
   IsString,
   MaxLength,
   MinLength,
+  IsArray,
+  IsUUID,
 } from 'class-validator';
 import { TaskPriority, TaskStatus } from '../types';
+
+class AssignmentInputDto {
+  @ApiProperty({ description: 'ID do usuário atribuído', format: 'uuid' })
+  @IsUUID()
+  userId!: string;
+
+  @ApiProperty({
+    description: 'Papel do usuário na tarefa',
+    example: 'assigned',
+  })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  role!: string;
+}
 
 export class UpdateTaskDto {
   @ApiPropertyOptional({ minLength: 3, maxLength: 255 })
@@ -37,4 +54,9 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsEnum(TaskStatus)
   status?: TaskStatus;
+
+  @ApiPropertyOptional({ type: [AssignmentInputDto] })
+  @IsOptional()
+  @IsArray()
+  assignments?: AssignmentInputDto[];
 }

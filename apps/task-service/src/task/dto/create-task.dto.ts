@@ -6,4 +6,5 @@ export class CreateTaskDto {
   deadline?: Date;
   priority?: TaskPriority;
   status?: TaskStatus;
+  assignments?: Array<{ userId: string; role: string }>;
 }
