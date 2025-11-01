@@ -6,14 +6,15 @@ import { createLogger } from '@repo/shared-config';
 
 async function bootstrap() {
   const logger: LoggerService = createLogger({
-    serviceName: 'task-service',
+    serviceName: 'notifications-service',
   }) as unknown as LoggerService;
 
   const app = await NestFactory.create(AppModule, { logger });
 
   const rmqUrl =
     process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
-  const queue = 'task_queue';
+
+  const queue = 'notification_queue';
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
@@ -26,10 +27,13 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  const port = 3003;
+  const port = 3004;
   await app.listen(port);
 
-  logger.log(`🚀 task-service HTTP em http://localhost:${port}`, 'Bootstrap');
+  logger.log(
+    `🚀 notifications-service HTTP em http://localhost:${port}`,
+    'Bootstrap',
+  );
   logger.log(`RabbitMQ Queue: ${queue}`, 'Bootstrap');
 }
 

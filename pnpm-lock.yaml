@@ -147,18 +147,36 @@ importers:
 
   apps/api-gateway:
     dependencies:
+      '@repo/shared-config':
+        specifier: workspace:*
+        version: link:../../packages/shared-config
       '@repo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
 
   apps/auth-service:
     dependencies:
+      '@repo/shared-config':
+        specifier: workspace:*
+        version: link:../../packages/shared-config
+      '@repo/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+
+  apps/notifications-service:
+    dependencies:
+      '@repo/shared-config':
+        specifier: workspace:*
+        version: link:../../packages/shared-config
       '@repo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
 
   apps/task-service:
     dependencies:
+      '@repo/shared-config':
+        specifier: workspace:*
+        version: link:../../packages/shared-config
       '@repo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -235,6 +253,18 @@ importers:
       typescript-eslint:
         specifier: ^8.40.0
         version: 8.40.0(eslint@9.38.0)(typescript@5.9.2)
+
+  packages/shared-config:
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.2
 
   packages/shared-types:
     devDependencies:

@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import { Repository } from 'typeorm';
 import { TaskComment } from '../entities/task-comment.entity';
 import { TaskAssignment } from '../entities/task-assignment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Result, AppError } from '@repo/shared-types';
+import { TaskEntity } from 'src/entities';
 
 @Injectable()
 export class CommentService {
@@ -15,6 +17,10 @@ export class CommentService {
     private readonly commentRepo: Repository<TaskComment>,
     @InjectRepository(TaskAssignment)
     private readonly assignmentRepo: Repository<TaskAssignment>,
+    @InjectRepository(TaskEntity)
+    private readonly taskRepo: Repository<TaskEntity>,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationClient: ClientProxy,
   ) {}
 
   async create(
@@ -44,6 +50,28 @@ export class CommentService {
       });
       const saved = await this.commentRepo.save(comment);
       this.logger.log(`Comentário ${saved.id} criado com sucesso`);
+
+      // Emitir evento de notificação
+      const assignedUserIds = await this.assignmentRepo
+        .find({ where: { taskId } })
+        .then((assigns) => assigns.map((a) => a.userId));
+
+      const { title: taskTitle } = await this.taskRepo.findOne({
+        where: { id: taskId },
+        select: { title: true },
+      });
+
+      this.notificationClient.emit('notification.task.comment', {
+        taskId,
+        title: taskTitle,
+        commentId: saved.id,
+        authorId: userId,
+        assignedUserIds,
+      });
+      this.logger.log(
+        `Evento notification.task.comment emitido para comentário ${saved.id}`,
+      );
+
       return Result.ok(saved);
     } catch (err) {
       this.logger.error(

@@ -28,6 +28,37 @@ services:
     depends_on:
       - db
       - rabbitmq
+
+  task-service:
+    container_name: task_service
+    build:
+      context: .
+      dockerfile: ./apps/task-service/Dockerfile
+    env_file: .env
+    restart: always
+    ports:
+      - "3003:3003"
+    networks:
+      - app_network
+    depends_on:
+      - db
+      - rabbitmq
+
+  notifications-service:
+    container_name: notifications_service
+    build:
+      context: .
+      dockerfile: ./apps/notifications-service/Dockerfile
+    env_file: .env
+    restart: always
+    ports:
+      - "3004:3004"
+    networks:
+      - app_network
+    depends_on:
+      - db
+      - rabbitmq
+
     # Postgres Database
   db:
     image: postgres:17.5-alpine3.21

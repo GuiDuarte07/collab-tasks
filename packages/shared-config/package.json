@@ -1,5 +1,5 @@
 {
-  "name": "@repo/shared-types",
+  "name": "@repo/shared-config",
   "version": "0.0.1",
   "private": true,
   "main": "./dist/index.js",
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint \"src/**/*.ts\"",
-    "clean": "rm -rf dist"
+    "clean": "rimraf dist"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

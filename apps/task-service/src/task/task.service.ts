@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import { In, Repository } from 'typeorm';
 import { TaskEntity } from '../entities/task.entity';
 import { TaskAssignment } from '../entities/task-assignment.entity';
@@ -19,6 +20,8 @@ export class TaskService {
     private readonly assignmentRepo: Repository<TaskAssignment>,
     @InjectRepository(TaskAudit)
     private readonly auditRepo: Repository<TaskAudit>,
+    @Inject('NOTIFICATION_SERVICE')
+    private readonly notificationClient: ClientProxy,
   ) {}
 
   async create(
@@ -154,6 +157,21 @@ export class TaskService {
         }),
       );
       this.logger.log(`Histórico (CREATE) registrado para tarefa ${saved.id}`);
+
+      // Emitir evento de notificação
+      const allAssignedUserIds = await this.assignmentRepo
+        .find({ where: { taskId: saved.id } })
+        .then((assigns) => assigns.map((a) => a.userId));
+
+      this.notificationClient.emit('notification.task.create', {
+        taskId: saved.id,
+        title: saved.title,
+        creatorId: userId ?? '',
+        assignedUserIds: allAssignedUserIds,
+      });
+      this.logger.log(
+        `Evento notification.task.create emitido para tarefa ${saved.id}`,
+      );
 
       return Result.ok(saved);
     } catch (err) {
@@ -321,6 +339,8 @@ export class TaskService {
       }
 
       // Processar assignments se enviados: varre DTO, atualiza/insere; depois remove os que sobraram
+      const toAdd: Array<{ userId: string; role: string }> = [];
+
       if (dto.assignments) {
         const current = await this.assignmentRepo.find({
           where: { taskId: id },
@@ -328,7 +348,6 @@ export class TaskService {
         const currentMap = new Map(current.map((a) => [a.userId, a]));
         const processed = new Set<string>();
 
-        const toAdd: Array<{ userId: string; role: string }> = [];
         const toUpdate: Array<{ userId: string; from: string; to: string }> =
           [];
         const toRemove: Array<{ userId: string; role: string }> = [];
@@ -426,6 +445,30 @@ export class TaskService {
           );
         }
       }
+
+      // Emitir evento de notificação (fire-and-forget)
+      const allAssignedUserIds = await this.assignmentRepo
+        .find({ where: { taskId: id } })
+        .then((assigns) => assigns.map((a) => a.userId));
+
+      // Identificar novos usuários adicionados (do toAdd array se assignments foi processado)
+      const newlyAddedUserIds = dto.assignments
+        ? allAssignedUserIds.filter((uid) =>
+            toAdd.some((a) => a.userId === uid),
+          )
+        : [];
+
+      this.notificationClient.emit('notification.task.update', {
+        taskId: id,
+        title: saved.title,
+        updatedBy: userId ?? '',
+        assignedUserIds: allAssignedUserIds,
+        newlyAddedUserIds,
+      });
+      this.logger.log(
+        `Evento notification.task.update emitido para tarefa ${id}`,
+      );
+
       return Result.ok(saved);
     } catch (err) {
       this.logger.error(
