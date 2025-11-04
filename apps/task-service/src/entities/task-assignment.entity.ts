@@ -5,6 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { TaskEntity } from './task.entity';
 
@@ -29,5 +30,6 @@ export class TaskAssignment {
   @ManyToOne(() => TaskEntity, (task) => task.assignments, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'task_id' })
   task!: TaskEntity;
 }

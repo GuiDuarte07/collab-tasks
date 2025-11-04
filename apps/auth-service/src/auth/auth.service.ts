@@ -1,7 +1,7 @@
 import { UserEntity } from './../entities/user.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -153,5 +153,63 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  // Busca usuários a partir de um array de consultas contendo userId, username ou email
+  async findUsersByQueries(
+    queries: Array<{ userId?: string; username?: string; email?: string }>,
+  ): Promise<
+    Result<Array<{ id: string; name: string; username: string; email: string }>>
+  > {
+    try {
+      if (!queries || queries.length === 0) {
+        return Result.ok([]);
+      }
+
+      const ids = queries.map((q) => q.userId).filter((v): v is string => !!v);
+      const usernames = queries
+        .map((q) => q.username)
+        .filter((v): v is string => !!v);
+      const emails = queries
+        .map((q) => q.email)
+        .filter((v): v is string => !!v);
+
+      const foundSets: UserEntity[][] = [];
+
+      if (ids.length > 0) {
+        foundSets.push(
+          await this.userRepository.find({ where: { id: In(ids) } }),
+        );
+      }
+      if (usernames.length > 0) {
+        foundSets.push(
+          await this.userRepository.find({
+            where: { username: In(usernames) },
+          }),
+        );
+      }
+      if (emails.length > 0) {
+        foundSets.push(
+          await this.userRepository.find({ where: { email: In(emails) } }),
+        );
+      }
+
+      // Unificar e remover duplicados por id
+      const byId = new Map<string, UserEntity>();
+      for (const set of foundSets) {
+        for (const u of set) byId.set(u.id, u);
+      }
+
+      const result = Array.from(byId.values()).map((u) => ({
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        email: u.email,
+      }));
+
+      return Result.ok(result);
+    } catch (err) {
+      return Result.err(new AppError(err, { statusCode: 500 }));
+    }
   }
 }

@@ -8,6 +8,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { logger });
 
+  // CORS
+  app.enableCors({
+    origin: '*', // Permite qualquer origem (desenvolvimento)
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
+
   app.setGlobalPrefix('api');
 
   // Swagger

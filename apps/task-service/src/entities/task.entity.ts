@@ -42,6 +42,9 @@ export class TaskEntity {
   @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.TODO })
   status!: TaskStatus;
 
+  @Column({ type: 'uuid', name: 'created_by', nullable: true })
+  createdBy?: string | null;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt!: Date;
 

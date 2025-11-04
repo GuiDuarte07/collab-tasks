@@ -31,4 +31,25 @@ export class AuthController {
   ): Promise<Result<RefreshTokenResponse>> {
     return await this.authService.refreshToken(data);
   }
+
+  @MessagePattern('auth.users.findMany')
+  async findManyUsers(
+    @Payload()
+    payload: {
+      queries: Array<{
+        userId?: string;
+        username?: string;
+        email?: string;
+      }>;
+    },
+  ): Promise<
+    Result<Array<{ id: string; name: string; username: string; email: string }>>
+  > {
+    const normalized = (payload?.queries ?? []).map((q) => ({
+      userId: q.userId,
+      username: q.username,
+      email: q.email,
+    }));
+    return await this.authService.findUsersByQueries(normalized);
+  }
 }

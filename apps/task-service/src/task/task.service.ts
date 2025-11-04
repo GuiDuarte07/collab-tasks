@@ -8,6 +8,7 @@ import { TaskAudit } from '../entities/task-audit.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Result, AppError } from '@repo/shared-types';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class TaskService {
@@ -22,6 +23,8 @@ export class TaskService {
     private readonly auditRepo: Repository<TaskAudit>,
     @Inject('NOTIFICATION_SERVICE')
     private readonly notificationClient: ClientProxy,
+    @Inject('AUTH_SERVICE')
+    private readonly authClient: ClientProxy,
   ) {}
 
   async create(
@@ -38,6 +41,7 @@ export class TaskService {
         deadline: dto.deadline ?? null,
         priority: dto.priority,
         status: dto.status,
+        createdBy: userId ?? null,
       });
 
       const saved = await this.taskRepo.save(entity);
@@ -175,6 +179,12 @@ export class TaskService {
 
       return Result.ok(saved);
     } catch (err) {
+      if (this.isDuplicateAssignmentError(err)) {
+        this.logger.warn('Usuário já está atribuído a esta tarefa (CREATE)');
+        return Result.err(
+          new AppError('Usuário já está atribuído a esta tarefa', 409),
+        );
+      }
       this.logger.error(
         `Erro ao criar tarefa: ${err instanceof Error ? err.message : String(err)}`,
         err instanceof Error ? err.stack : undefined,
@@ -190,17 +200,22 @@ export class TaskService {
       if (userId) {
         list = await this.taskRepo
           .createQueryBuilder('task')
+          .leftJoinAndSelect('task.assignments', 'assignments')
           .innerJoin(
-            'task_assignments',
-            'assign',
-            'assign.task_id = task.id AND assign.user_id = :userId',
+            'task.assignments',
+            'userAssignment',
+            'userAssignment.userId = :userId',
             { userId },
           )
           .getMany();
       } else {
-        list = await this.taskRepo.find();
+        list = await this.taskRepo.find({ relations: ['assignments'] });
       }
       this.logger.log(`${list.length} tarefa(s) encontrada(s)`);
+
+      // Enriquecer assignments com dados dos usuários
+      await this.enrichTasksWithUserData(list);
+
       return Result.ok(list);
     } catch (err) {
       this.logger.error(
@@ -216,7 +231,10 @@ export class TaskService {
       `Buscando tarefa ${id}${userId ? ` (usuário: ${userId})` : ''}`,
     );
     try {
-      const found = await this.taskRepo.findOne({ where: { id } });
+      const found = await this.taskRepo.findOne({
+        where: { id },
+        relations: ['assignments'],
+      });
       if (!found) {
         this.logger.warn(`Tarefa ${id} não encontrada`);
         return Result.err(new AppError('Tarefa não encontrada', 404));
@@ -232,6 +250,10 @@ export class TaskService {
           return Result.err(new AppError('Acesso negado', 403));
         }
       }
+
+      // Enriquecer assignments com dados dos usuários
+      await this.enrichTasksWithUserData([found]);
+
       this.logger.log(`Tarefa ${id} encontrada com sucesso`);
       return Result.ok(found);
     } catch (err) {
@@ -251,6 +273,7 @@ export class TaskService {
     this.logger.log(
       `Atualizando tarefa ${id}${userId ? ` (usuário: ${userId})` : ''}`,
     );
+
     try {
       const found = await this.taskRepo.findOne({ where: { id } });
       if (!found) {
@@ -268,6 +291,7 @@ export class TaskService {
           return Result.err(new AppError('Acesso negado', 403));
         }
       }
+
       // Calcular mudanças a partir do DTO
       const changes: Array<{ field: string; from: unknown; to: unknown }> = [];
 
@@ -311,8 +335,27 @@ export class TaskService {
         }
       }
 
-      const merged = this.taskRepo.merge(found, dto);
-      const saved = await this.taskRepo.save(merged);
+      const { assignments: incomingAssignments, ...taskFields } = dto;
+      const merged = this.taskRepo.merge(
+        found,
+        taskFields as Partial<TaskEntity>,
+      );
+      let saved: TaskEntity;
+      try {
+        saved = await this.taskRepo.save(merged);
+      } catch (saveErr) {
+        const info = this.extractDbErrorInfo(saveErr);
+        this.logger.error(
+          `Erro ao salvar tarefa (UPDATE save): ${info.message} | code=${info.code ?? 'n/a'} constraint=${info.constraint ?? 'n/a'}`,
+          info.stack,
+        );
+        return Result.err(
+          new AppError(
+            `Erro ao salvar tarefa (save). code=${info.code ?? 'n/a'} constraint=${info.constraint ?? 'n/a'} detail=${info.detail ?? info.message}`,
+            500,
+          ),
+        );
+      }
       this.logger.log(`Tarefa ${id} atualizada com sucesso`);
 
       // Auditoria: UPDATE (apenas se houve alterações)
@@ -341,10 +384,11 @@ export class TaskService {
       // Processar assignments se enviados: varre DTO, atualiza/insere; depois remove os que sobraram
       const toAdd: Array<{ userId: string; role: string }> = [];
 
-      if (dto.assignments) {
+      if (incomingAssignments) {
         const current = await this.assignmentRepo.find({
           where: { taskId: id },
         });
+
         const currentMap = new Map(current.map((a) => [a.userId, a]));
         const processed = new Set<string>();
 
@@ -353,7 +397,7 @@ export class TaskService {
         const toRemove: Array<{ userId: string; role: string }> = [];
 
         // Percorre cada assignment enviado no DTO
-        for (const a of dto.assignments) {
+        for (const a of incomingAssignments) {
           processed.add(a.userId);
           const existing = currentMap.get(a.userId);
           if (!existing) {
@@ -446,13 +490,11 @@ export class TaskService {
         }
       }
 
-      // Emitir evento de notificação (fire-and-forget)
       const allAssignedUserIds = await this.assignmentRepo
         .find({ where: { taskId: id } })
         .then((assigns) => assigns.map((a) => a.userId));
 
-      // Identificar novos usuários adicionados (do toAdd array se assignments foi processado)
-      const newlyAddedUserIds = dto.assignments
+      const newlyAddedUserIds = incomingAssignments
         ? allAssignedUserIds.filter((uid) =>
             toAdd.some((a) => a.userId === uid),
           )
@@ -471,6 +513,14 @@ export class TaskService {
 
       return Result.ok(saved);
     } catch (err) {
+      if (this.isDuplicateAssignmentError(err)) {
+        this.logger.warn(
+          `Usuário já está atribuído a esta tarefa (UPDATE ${id})`,
+        );
+        return Result.err(
+          new AppError('Usuário já está atribuído a esta tarefa', 409),
+        );
+      }
       this.logger.error(
         `Erro ao atualizar tarefa ${id}: ${err instanceof Error ? err.message : String(err)}`,
         err instanceof Error ? err.stack : undefined,
@@ -530,5 +580,147 @@ export class TaskService {
       );
       return Result.err(new AppError(err, { statusCode: 500 }));
     }
+  }
+
+  /**
+   * Enriquece as tasks com dados dos usuários via auth.users.findMany
+   */
+  private async enrichTasksWithUserData(tasks: TaskEntity[]): Promise<void> {
+    try {
+      const allUserIds = new Set<string>();
+      for (const task of tasks) {
+        if (task.assignments) {
+          for (const assign of task.assignments) {
+            allUserIds.add(assign.userId);
+          }
+        }
+      }
+
+      if (allUserIds.size === 0) return;
+
+      const queries = Array.from(allUserIds).map((userId) => ({ userId }));
+      const result = await firstValueFrom(
+        this.authClient.send<
+          Result<
+            Array<{ id: string; name: string; username: string; email: string }>
+          >
+        >('auth.users.findMany', { queries }),
+      );
+
+      if (!result?.ok || !result.data) {
+        this.logger.warn(
+          'Falha ao enriquecer assignments com dados de usuário',
+        );
+        return;
+      }
+
+      const usersById = new Map(result.data.map((u) => [u.id, u]));
+
+      for (const task of tasks) {
+        if (task.assignments) {
+          for (const assign of task.assignments) {
+            const user = usersById.get(assign.userId);
+            if (user) {
+              Object.assign(assign, {
+                name: user.name,
+                username: user.username,
+                email: user.email,
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.error(
+        `Erro ao enriquecer tasks com dados de usuário: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  private isDuplicateAssignmentError(err: unknown): boolean {
+    type PgError = {
+      code?: unknown;
+      constraint?: unknown;
+      driverError?: { code?: unknown; constraint?: unknown };
+    };
+    const e = err as PgError;
+    const code =
+      typeof e.code === 'string'
+        ? e.code
+        : typeof e.driverError?.code === 'string'
+          ? e.driverError.code
+          : undefined;
+    const constraint =
+      typeof e.constraint === 'string'
+        ? e.constraint
+        : typeof e.driverError?.constraint === 'string'
+          ? e.driverError.constraint
+          : undefined;
+    if (code === '23505') {
+      if (
+        constraint === 'IDX_2f1f822596c4af9491d12ff0cb' ||
+        constraint === 'task_assignments_task_id_user_id_key'
+      ) {
+        return true;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /** Extrai informações úteis de erros de banco (Postgres/TypeORM) para logging/resposta */
+  private extractDbErrorInfo(err: unknown): {
+    message: string;
+    code?: string;
+    constraint?: string;
+    detail?: string;
+    stack?: string;
+  } {
+    type PgError = {
+      message?: unknown;
+      code?: unknown;
+      constraint?: unknown;
+      detail?: unknown;
+      stack?: unknown;
+      driverError?: {
+        message?: unknown;
+        code?: unknown;
+        constraint?: unknown;
+        detail?: unknown;
+        stack?: unknown;
+      };
+    };
+    const e = err as PgError;
+    const code =
+      typeof e.code === 'string'
+        ? e.code
+        : typeof e.driverError?.code === 'string'
+          ? e.driverError.code
+          : undefined;
+    const constraint =
+      typeof e.constraint === 'string'
+        ? e.constraint
+        : typeof e.driverError?.constraint === 'string'
+          ? e.driverError.constraint
+          : undefined;
+    const detail =
+      typeof e.detail === 'string'
+        ? e.detail
+        : typeof e.driverError?.detail === 'string'
+          ? e.driverError.detail
+          : undefined;
+    const message =
+      typeof e.message === 'string'
+        ? e.message
+        : typeof e.driverError?.message === 'string'
+          ? e.driverError.message
+          : 'Unknown error';
+    const stack =
+      typeof e.stack === 'string'
+        ? e.stack
+        : typeof e.driverError?.stack === 'string'
+          ? e.driverError.stack
+          : undefined;
+    return { message, code, constraint, detail, stack };
   }
 }
