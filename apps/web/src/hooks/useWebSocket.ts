@@ -9,11 +9,15 @@ import type {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-export const useWebSocket = () => {
+type UseWebSocketOptions = { enabled?: boolean };
+
+export const useWebSocket = (options?: UseWebSocketOptions) => {
+  const enabled = options?.enabled ?? true;
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!enabled) return;
     const socket = getSocket();
 
     if (!socket) return;
@@ -65,7 +69,11 @@ export const useWebSocket = () => {
           toast.error("Sessão expirada. Faça login novamente.");
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
-          window.location.href = "/login";
+          const path =
+            typeof window !== "undefined" ? window.location.pathname : "";
+          if (path !== "/login" && path !== "/register") {
+            window.location.href = "/login";
+          }
         }
       }
     });
@@ -81,7 +89,7 @@ export const useWebSocket = () => {
       socket.off("task:updated", handleTaskUpdated);
       socket.off("comment:new", handleCommentNew);
     };
-  }, [queryClient]);
+  }, [queryClient, enabled]);
 
   return { isConnected };
 };

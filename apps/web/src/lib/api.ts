@@ -51,7 +51,12 @@ api.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
+        // Evita loop de recarregamento nas rotas de auth
+        const path =
+          typeof window !== "undefined" ? window.location.pathname : "";
+        if (path !== "/login" && path !== "/register") {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
       }
     }

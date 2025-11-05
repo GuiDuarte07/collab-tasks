@@ -5,6 +5,8 @@ import { Layout } from '@/components/layout/Layout.tsx'
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: () => {
     const accessToken = localStorage.getItem('accessToken')
+
+    console.log(accessToken)
     if (!accessToken) {
       throw redirect({ to: '/login' })
     }

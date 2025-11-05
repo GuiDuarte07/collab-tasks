@@ -1,12 +1,16 @@
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { Toaster as SonnerToaster } from 'sonner'
 
 function WebSocketBinder() {
-  // Inicializa listeners de WebSocket (se autenticado)
-  useWebSocket()
+  const { location } = useRouterState()
+  const path = location.pathname
+  const isAuthRoute = path === '/login' || path === '/register'
+
+  // Só inicializa listeners fora das rotas de autenticação
+  useWebSocket({ enabled: !isAuthRoute })
   return null
 }
 
