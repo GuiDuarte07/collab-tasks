@@ -21,8 +21,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@repo/shared-types": "workspace:*",
-    "@repo/shared-config": "workspace:*"
+    "@nestjs/throttler": "^6.4.0",
+    "@repo/shared-config": "workspace:*",
+    "@repo/shared-types": "workspace:*"
   },
   "jest": {
     "moduleFileExtensions": [
