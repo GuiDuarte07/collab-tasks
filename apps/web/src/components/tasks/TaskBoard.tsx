@@ -6,12 +6,13 @@ import { TaskDetail } from './TaskDetail.tsx';
 import { useTasks } from '@/hooks/useTasks.ts';
 import type { Task, TaskStatus } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getStatusLabel } from '@/lib/task-utils';
 
-const COLUMNS: { status: TaskStatus; label: string; color: string }[] = [
-  { status: 'TODO', label: 'A Fazer', color: 'bg-gray-100' },
-  { status: 'IN_PROGRESS', label: 'Em Progresso', color: 'bg-blue-100' },
-  { status: 'REVIEW', label: 'Em Revisão', color: 'bg-yellow-100' },
-  { status: 'DONE', label: 'Concluído', color: 'bg-green-100' },
+const COLUMNS: { status: TaskStatus; color: string }[] = [
+  { status: 'TODO', color: 'bg-gray-100' },
+  { status: 'IN_PROGRESS', color: 'bg-blue-100' },
+  { status: 'REVIEW', color: 'bg-yellow-100' },
+  { status: 'DONE', color: 'bg-green-100' },
 ];
 
 export function TaskBoard() {
@@ -53,7 +54,7 @@ export function TaskBoard() {
             <div key={column.status} className="flex flex-col">
               <div className={`${column.color} rounded-lg p-3 mb-3`}>
                 <h2 className="font-semibold text-sm flex items-center justify-between">
-                  {column.label}
+                  {getStatusLabel(column.status)}
                   <span className="text-xs bg-white px-2 py-1 rounded-full">
                     {columnTasks.length}
                   </span>

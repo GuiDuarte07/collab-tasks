@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   ListTodo, 
   Settings, 
-  Bell,
   ChevronLeft
 } from 'lucide-react';
 import { useState } from 'react';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'Board', href: '/board', icon: LayoutDashboard },
-  { name: 'Lista', href: '/tasks', icon: ListTodo },
+  { name: 'Lista', href: '/tasks-list', icon: ListTodo },
   { name: 'Configurações', href: '/settings', icon: Settings },
 ];
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { refreshTokenApi } from "@/lib/api";
 import type {
   TaskCreatedEvent,
   TaskUpdatedEvent,
@@ -52,8 +53,21 @@ export const useWebSocket = () => {
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
-    socket.on("connect_error", (err) => {
+    socket.on("connect_error", async (err) => {
       console.error("Erro de conexão do WebSocket:", err);
+      if (err?.message?.includes("jwt expired")) {
+        try {
+          const accessToken = await refreshTokenApi();
+          (socket.auth as { token?: string }).token = accessToken;
+          socket.connect();
+          toast.info("Sessão renovada. Reconectando ao tempo real...");
+        } catch {
+          toast.error("Sessão expirada. Faça login novamente.");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          window.location.href = "/login";
+        }
+      }
     });
     socket.on("task:created", handleTaskCreated);
     socket.on("task:updated", handleTaskUpdated);

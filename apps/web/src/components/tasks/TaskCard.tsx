@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Task } from '@/types';
 import { Calendar, User } from 'lucide-react';
+import { getPriorityLabel } from '@/lib/task-utils';
 
 interface TaskCardProps {
   task: Task;
@@ -25,7 +26,7 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-medium line-clamp-2 flex-1">{task.title}</h3>
           <Badge className={priorityColors[task.priority]}>
-            {task.priority}
+            {getPriorityLabel(task.priority)}
           </Badge>
         </div>
         

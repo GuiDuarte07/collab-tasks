@@ -5,6 +5,7 @@ import { CommentService } from './comment.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { ListTasksDto } from './dto/list-tasks.dto';
 import { Result } from '@repo/shared-types';
 import { TaskEntity } from '../entities/task.entity';
 import { TaskComment } from '../entities/task-comment.entity';
@@ -30,12 +31,14 @@ export class TaskController {
 
   @MessagePattern('task.list')
   async list(
-    @Payload() payload: { userId: string },
-  ): Promise<Result<TaskEntity[]>> {
+    @Payload() payload: { userId: string; filters?: ListTasksDto },
+  ): Promise<
+    Result<{ data: TaskEntity[]; total: number; page: number; size: number }>
+  > {
     this.logger.log(
       `RMQ: Recebida requisição task.list (usuário: ${payload.userId})`,
     );
-    return this.taskService.findAll(payload.userId);
+    return this.taskService.findAll(payload.userId, payload.filters);
   }
 
   @MessagePattern('task.get')

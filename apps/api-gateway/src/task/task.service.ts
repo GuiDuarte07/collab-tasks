@@ -5,6 +5,7 @@ import { Result } from '@repo/shared-types';
 import { Task } from './types';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { ListTasksDto } from './dto/list-tasks.dto';
 
 @Injectable()
 export class TaskGatewayService {
@@ -16,9 +17,11 @@ export class TaskGatewayService {
     );
   }
 
-  list(userId: string) {
+  list(userId: string, filters?: ListTasksDto) {
     return firstValueFrom(
-      this.client.send<Result<Task[]>>('task.list', { userId }),
+      this.client.send<
+        Result<{ data: Task[]; total: number; page: number; size: number }>
+      >('task.list', { userId, filters }),
     );
   }
 

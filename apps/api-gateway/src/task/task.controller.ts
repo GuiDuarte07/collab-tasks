@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpException,
   HttpStatus,
@@ -23,6 +24,7 @@ import { UserId } from '../auth/user-id.decorator';
 import { TaskGatewayService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { ListTasksDto } from './dto/list-tasks.dto';
 import { AppError, Result } from '@repo/shared-types';
 import { Task } from './types';
 
@@ -54,11 +56,19 @@ export class TaskController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar tarefas' })
-  @ApiResponse({ status: 200, description: 'Lista de tarefas' })
-  async list(@UserId() userId: string): Promise<Task[]> {
+  @ApiOperation({ summary: 'Listar tarefas com filtros e paginação' })
+  @ApiResponse({ status: 200, description: 'Lista de tarefas paginada' })
+  async list(
+    @UserId() userId: string,
+    @Query() filters: ListTasksDto,
+  ): Promise<{ data: Task[]; total: number; page: number; size: number }> {
     try {
-      const result: Result<Task[]> = await this.taskService.list(userId);
+      const result: Result<{
+        data: Task[];
+        total: number;
+        page: number;
+        size: number;
+      }> = await this.taskService.list(userId, filters);
       if (result?.ok) return result.data;
       throw new HttpException(result.error, result.error.statusCode);
     } catch (error: unknown) {

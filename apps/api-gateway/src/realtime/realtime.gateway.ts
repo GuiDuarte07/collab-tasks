@@ -46,6 +46,31 @@ export class RealtimeGateway
 
   constructor(private readonly jwt: JwtService) {}
 
+  afterInit(server: Server) {
+    // Middleware para autenticação JWT no handshake
+    server.use((socket, next) => {
+      try {
+        const token = (socket.handshake.auth as any)?.token as
+          | string
+          | undefined;
+        if (!token) {
+          return next(new Error('jwt missing'));
+        }
+        try {
+          this.jwt.verify(token);
+        } catch (err: any) {
+          if (err?.name === 'TokenExpiredError') {
+            return next(new Error('jwt expired'));
+          }
+          return next(new Error('jwt invalid'));
+        }
+        next();
+      } catch {
+        next(new Error('jwt error'));
+      }
+    });
+  }
+
   handleConnection(client: Socket): void {
     try {
       const token = (client.handshake.auth as any)?.token as string | undefined;
@@ -67,7 +92,7 @@ export class RealtimeGateway
       }
 
       client.join(`user:${userId}`);
-      (client.data as any).userId = userId;
+      client.data.userId = userId;
       this.logger.log(`Socket conectado: ${client.id} usuário=${userId}`);
     } catch (e) {
       this.logger.warn(

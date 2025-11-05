@@ -23,7 +23,8 @@
   "dependencies": {
     "@nestjs/throttler": "^6.4.0",
     "@repo/shared-config": "workspace:*",
-    "@repo/shared-types": "workspace:*"
+    "@repo/shared-types": "workspace:*",
+    "class-transformer": "^0.5.1"
   },
   "jest": {
     "moduleFileExtensions": [

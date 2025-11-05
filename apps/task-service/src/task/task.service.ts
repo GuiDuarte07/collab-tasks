@@ -7,6 +7,7 @@ import { TaskAssignment } from '../entities/task-assignment.entity';
 import { TaskAudit } from '../entities/task-audit.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { ListTasksDto } from './dto/list-tasks.dto';
 import { Result, AppError } from '@repo/shared-types';
 import { firstValueFrom } from 'rxjs';
 
@@ -193,30 +194,76 @@ export class TaskService {
     }
   }
 
-  async findAll(userId?: string): Promise<Result<TaskEntity[]>> {
-    this.logger.log(`Listando tarefas${userId ? ` (usuário: ${userId})` : ''}`);
+  async findAll(
+    userId?: string,
+    filters?: ListTasksDto,
+  ): Promise<
+    Result<{ data: TaskEntity[]; total: number; page: number; size: number }>
+  > {
+    this.logger.log(
+      `Listando tarefas${userId ? ` (usuário: ${userId})` : ''}${filters ? ' com filtros' : ''}`,
+    );
     try {
-      let list: TaskEntity[];
+      const page = filters?.page ?? 1;
+      const size = filters?.size ?? 10;
+      const sortBy = filters?.sortBy ?? 'createdAt';
+      const sortOrder = filters?.sortOrder ?? 'DESC';
+
+      const queryBuilder = this.taskRepo
+        .createQueryBuilder('task')
+        .leftJoinAndSelect('task.assignments', 'assignments');
+
+      // Filtrar por usuário se fornecido
       if (userId) {
-        list = await this.taskRepo
-          .createQueryBuilder('task')
-          .leftJoinAndSelect('task.assignments', 'assignments')
-          .innerJoin(
-            'task.assignments',
-            'userAssignment',
-            'userAssignment.userId = :userId',
-            { userId },
-          )
-          .getMany();
-      } else {
-        list = await this.taskRepo.find({ relations: ['assignments'] });
+        queryBuilder.innerJoin(
+          'task.assignments',
+          'userAssignment',
+          'userAssignment.userId = :userId',
+          { userId },
+        );
       }
-      this.logger.log(`${list.length} tarefa(s) encontrada(s)`);
+
+      // Filtros adicionais
+      if (filters?.status) {
+        queryBuilder.andWhere('task.status = :status', {
+          status: filters.status,
+        });
+      }
+
+      if (filters?.priority) {
+        queryBuilder.andWhere('task.priority = :priority', {
+          priority: filters.priority,
+        });
+      }
+
+      if (filters?.search) {
+        queryBuilder.andWhere(
+          '(task.title ILIKE :search OR task.description ILIKE :search)',
+          { search: `%${filters.search}%` },
+        );
+      }
+
+      // Ordenação
+      queryBuilder.orderBy(`task.${sortBy}`, sortOrder);
+
+      // Paginação
+      queryBuilder.skip((page - 1) * size).take(size);
+
+      const [list, total] = await queryBuilder.getManyAndCount();
+
+      this.logger.log(
+        `${list.length} tarefa(s) encontrada(s) (página ${page}/${Math.ceil(total / size)})`,
+      );
 
       // Enriquecer assignments com dados dos usuários
       await this.enrichTasksWithUserData(list);
 
-      return Result.ok(list);
+      return Result.ok({
+        data: list,
+        total,
+        page,
+        size,
+      });
     } catch (err) {
       this.logger.error(
         `Erro ao listar tarefas: ${err instanceof Error ? err.message : String(err)}`,
@@ -240,10 +287,12 @@ export class TaskService {
         return Result.err(new AppError('Tarefa não encontrada', 404));
       }
       if (userId) {
-        const hasAccess = await this.assignmentRepo.exists({
+        // Verifica se é o criador ou se está atribuído à tarefa
+        const isCreator = found.createdBy === userId;
+        const hasAssignment = await this.assignmentRepo.exists({
           where: { taskId: id, userId },
         });
-        if (!hasAccess) {
+        if (!isCreator && !hasAssignment) {
           this.logger.warn(
             `Usuário ${userId} sem acesso à tarefa ${id} (negado)`,
           );
@@ -281,10 +330,12 @@ export class TaskService {
         return Result.err(new AppError('Tarefa não encontrada', 404));
       }
       if (userId) {
-        const hasAccess = await this.assignmentRepo.exists({
+        // Verifica se é o criador ou se está atribuído à tarefa
+        const isCreator = found.createdBy === userId;
+        const hasAssignment = await this.assignmentRepo.exists({
           where: { taskId: id, userId },
         });
-        if (!hasAccess) {
+        if (!isCreator && !hasAssignment) {
           this.logger.warn(
             `Usuário ${userId} sem acesso à tarefa ${id} (negado update)`,
           );
@@ -540,10 +591,12 @@ export class TaskService {
         return Result.err(new AppError('Tarefa não encontrada', 404));
       }
       if (userId) {
-        const hasAccess = await this.assignmentRepo.exists({
+        // Verifica se é o criador ou se está atribuído à tarefa
+        const isCreator = found.createdBy === userId;
+        const hasAssignment = await this.assignmentRepo.exists({
           where: { taskId: id, userId },
         });
-        if (!hasAccess) {
+        if (!isCreator && !hasAssignment) {
           this.logger.warn(
             `Usuário ${userId} sem acesso à tarefa ${id} (negado delete)`,
           );

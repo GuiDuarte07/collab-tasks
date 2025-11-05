@@ -2,11 +2,42 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import type { Task } from "@/types";
 
+interface TaskFilters {
+  page?: number;
+  size?: number;
+  status?: "backlog" | "todo" | "in_progress" | "done";
+  priority?: "low" | "medium" | "high";
+  search?: string;
+  sortBy?: "createdAt" | "updatedAt" | "deadline" | "priority" | "status";
+  sortOrder?: "ASC" | "DESC";
+}
+
+interface TasksResponse {
+  data: Task[];
+  total: number;
+  page: number;
+  size: number;
+}
+
 export function useTasks() {
   return useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
-      const { data } = await api.get<Task[]>("/tasks");
+      const { data } = await api.get<TasksResponse>("/tasks", {
+        params: { size: 100 },
+      });
+      return data.data;
+    },
+  });
+}
+
+export function useTasksWithFilters(filters?: TaskFilters) {
+  return useQuery({
+    queryKey: ["tasks", "filtered", filters],
+    queryFn: async () => {
+      const { data } = await api.get<TasksResponse>("/tasks", {
+        params: filters,
+      });
       return data;
     },
   });
