@@ -36,10 +36,9 @@ export class CreateTaskDto {
   @MaxLength(255)
   title!: string;
 
-  @ApiPropertyOptional({ example: 'Usar Next.js + Tailwind', maxLength: 5000 })
+  @ApiPropertyOptional({ example: 'Usar Next.js + Tailwind' })
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
   description?: string;
 
   @ApiPropertyOptional({

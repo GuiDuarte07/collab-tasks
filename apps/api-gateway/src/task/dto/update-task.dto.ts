@@ -34,10 +34,9 @@ export class UpdateTaskDto {
   @MaxLength(255)
   title?: string;
 
-  @ApiPropertyOptional({ maxLength: 5000 })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
   description?: string;
 
   @ApiPropertyOptional({ description: 'ISO 8601' })

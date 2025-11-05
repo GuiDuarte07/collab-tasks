@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { LoggerService } from '@nestjs/common';
 import { createLogger } from '@repo/shared-config';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
   const logger: LoggerService = createLogger({
@@ -25,6 +26,12 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
+
+  // roda migrations no bootstrap quando RUN_MIGRATIONS=true
+  if (process.env.RUN_MIGRATIONS === 'true') {
+    const dataSource = app.get(DataSource);
+    await dataSource.runMigrations();
+  }
 
   const port = 3003;
   await app.listen(port);

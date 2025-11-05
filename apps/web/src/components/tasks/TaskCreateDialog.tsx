@@ -18,7 +18,10 @@ import type { TaskPriority, TaskStatus } from '@/types'
 import { toast } from 'sonner'
 
 const schema = z.object({
-  title: z.string().min(3, 'Título é obrigatório'),
+  title: z
+    .string()
+    .min(3, 'Título é obrigatório')
+    .max(255, 'Título deve ter no máximo 255 caracteres'),
   description: z.string().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE']),
@@ -81,7 +84,7 @@ export function TaskCreateDialog({ open, onOpenChange }: TaskCreateDialogProps) 
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-2">
             <Label htmlFor="title">Título</Label>
-            <Input id="title" placeholder="Ex: Implementar autenticação" {...form.register('title')} />
+            <Input id="title" placeholder="Ex: Implementar autenticação" maxLength={255} {...form.register('title')} />
             {form.formState.errors.title && (
               <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>
             )}

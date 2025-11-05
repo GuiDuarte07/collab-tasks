@@ -1,4 +1,7 @@
+import 'reflect-metadata';
+import 'dotenv/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { DataSource, type DataSourceOptions } from 'typeorm';
 
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -9,6 +12,16 @@ export const databaseConfig: TypeOrmModuleOptions = {
   database: process.env.POSTGRES_DB || 'collabtasks_db',
   entities: [__dirname + '/../**/*.entity.{ts,js}'],
   autoLoadEntities: true,
-  synchronize: true,
+  synchronize: false,
+  migrations: [__dirname + '/../../migrations/*.{ts,js}'],
   logging: true,
 };
+
+// DataSource para o CLI do TypeORM (migrations)
+const dataSourceOptions: DataSourceOptions = {
+  ...(databaseConfig as unknown as DataSourceOptions),
+  entities: [__dirname + '/../entities/**/*.entity.{ts,js}'],
+  migrations: [__dirname + '/../../migrations/*.{ts,js}'],
+};
+
+export default new DataSource(dataSourceOptions);

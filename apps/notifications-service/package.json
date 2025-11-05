@@ -22,7 +22,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typeorm": "node -r dotenv/config -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js",
+    "migration:create": "node -r dotenv/config -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:create",
+    "migration:generate": "node -r dotenv/config -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/config/database.config.ts",
+    "migration:run": "node -r dotenv/config -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:run -d src/config/database.config.ts",
+    "migration:revert": "node -r dotenv/config -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:revert -d src/config/database.config.ts"
   },
   "jest": {
     "moduleFileExtensions": [
