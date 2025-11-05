@@ -1,4 +1,4 @@
-import { Bell, Loader2 } from 'lucide-react';
+import { Bell, Loader2, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,8 +7,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useNotifications, useMarkNotificationAsRead } from '@/hooks/useNotifications';
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/useNotifications';
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 const formatTimeAgo = (date: string) => {
   const now = new Date();
@@ -24,6 +25,7 @@ const formatTimeAgo = (date: string) => {
 export function NotificationDropdown() {
   const { data, isLoading } = useNotifications();
   const markAsRead = useMarkNotificationAsRead();
+  const markAllAsRead = useMarkAllNotificationsAsRead();
   const navigate = useNavigate();
 
   const handleNotificationClick = async (notificationId: string, taskId: string, isRead: boolean) => {
@@ -31,6 +33,15 @@ export function NotificationDropdown() {
       await markAsRead.mutateAsync(notificationId);
     }
     navigate({ to: `/tasks/${taskId}` });
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead.mutateAsync();
+      toast.success('Todas as notificações marcadas como lidas');
+    } catch (e: any) {
+      toast.error('Erro ao marcar notificações como lidas');
+    }
   };
 
   const unreadCount = data?.unreadCount ?? 0;
@@ -54,11 +65,25 @@ export function NotificationDropdown() {
       <DropdownMenuContent className="w-80" align="end">
         <div className="flex items-center justify-between border-b p-3">
           <h3 className="font-semibold">Notificações</h3>
-          {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {unreadCount} não {unreadCount === 1 ? 'lida' : 'lidas'}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground">
+                  {unreadCount} não {unreadCount === 1 ? 'lida' : 'lidas'}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  disabled={markAllAsRead.isPending}
+                  className="h-7 gap-1 text-xs"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Marcar todas
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         <ScrollArea className="h-[400px]">
           {isLoading && (

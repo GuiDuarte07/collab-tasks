@@ -20,8 +20,6 @@ export function TaskBoard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [openCreate, setOpenCreate] = useState(false);
 
-  console.log('Tasks:', tasks); 
-
   const getTasksByStatus = (status: TaskStatus) => {
   return tasks?.filter((task: Task) => task.status === status) || [];
   };

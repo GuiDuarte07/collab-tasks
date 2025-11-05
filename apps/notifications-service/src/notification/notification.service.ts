@@ -73,8 +73,6 @@ export class NotificationService {
       `Processando notification.task.create: taskId=${event.taskId}, assignedUsers=${event.assignedUserIds.length}`,
     );
 
-    console.log(event);
-
     const notifications = event.assignedUserIds
       .filter((userId) => userId !== event.creatorId)
       .map((userId) =>
@@ -175,6 +173,8 @@ export class NotificationService {
     notifications: NotificationEntity[];
     unreadCount: number;
   }> {
+    this.logger.log(`Buscando notificações para userId=${userId}`);
+
     const notifications = await this.notificationRepo.find({
       where: { userId },
       order: { createdAt: 'DESC' },
@@ -185,23 +185,47 @@ export class NotificationService {
       where: { userId, read: false },
     });
 
+    this.logger.log(
+      `Retornando ${notifications.length} notificações (${unreadCount} não lidas) para userId=${userId}`,
+    );
+
     return { notifications, unreadCount };
   }
 
   async markAsRead(notificationId: string, userId: string): Promise<void> {
+    this.logger.log(
+      `Marcando notificação como lida: notificationId=${notificationId}, userId=${userId}`,
+    );
+
     const notification = await this.notificationRepo.findOne({
       where: { id: notificationId, userId },
     });
 
     if (!notification) {
+      this.logger.warn(
+        `Notificação não encontrada: notificationId=${notificationId}, userId=${userId}`,
+      );
       throw new Error('Notificação não encontrada');
     }
 
     notification.read = true;
     await this.notificationRepo.save(notification);
+
+    this.logger.log(`Notificação ${notificationId} marcada como lida`);
   }
 
   async markAllAsRead(userId: string): Promise<void> {
-    await this.notificationRepo.update({ userId, read: false }, { read: true });
+    this.logger.log(
+      `Marcando todas as notificações como lidas para userId=${userId}`,
+    );
+
+    const result = await this.notificationRepo.update(
+      { userId, read: false },
+      { read: true },
+    );
+
+    this.logger.log(
+      `${result.affected || 0} notificação(ões) marcada(s) como lida(s) para userId=${userId}`,
+    );
   }
 }

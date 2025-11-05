@@ -127,7 +127,6 @@ export class RealtimeGateway
     );
 
     const rooms = this.roomsFor(recipients);
-    console.log(rooms);
     this.logger.log(
       `Emitindo task:updated ${event.taskId} para ${rooms.length} usuário(s)`,
     );

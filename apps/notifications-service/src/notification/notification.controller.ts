@@ -100,12 +100,17 @@ export class NotificationController {
 
   @MessagePattern('notification.mark.all.read')
   async markAllAsRead(@Payload() data: { userId: string }) {
+    this.logger.log(
+      `[markAllAsRead] Mensagem recebida da fila para userId=${data.userId}`,
+    );
+
     try {
       await this.notificationService.markAllAsRead(data.userId);
+      this.logger.log(`[markAllAsRead] Processamento concluído com sucesso`);
       return Result.ok(undefined);
     } catch (err) {
       this.logger.error(
-        `Erro ao marcar todas como lidas: ${err instanceof Error ? err.message : String(err)}`,
+        `[markAllAsRead] Erro ao marcar todas como lidas: ${err instanceof Error ? err.message : String(err)}`,
       );
       return Result.err(
         new AppError('Erro ao marcar todas como lidas', { statusCode: 500 }),

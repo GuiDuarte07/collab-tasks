@@ -60,7 +60,7 @@ export const useWebSocket = () => {
           const accessToken = await refreshTokenApi();
           (socket.auth as { token?: string }).token = accessToken;
           socket.connect();
-          toast.info("Sessão renovada. Reconectando ao tempo real...");
+          //toast.info("Sessão renovada. Reconectando ao tempo real...");
         } catch {
           toast.error("Sessão expirada. Faça login novamente.");
           localStorage.removeItem("accessToken");

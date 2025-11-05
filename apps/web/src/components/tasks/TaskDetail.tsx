@@ -32,6 +32,12 @@ export function TaskDetail({ task, open, onClose }: TaskDetailProps) {
     URGENT: 'bg-red-100 text-red-800 hover:bg-red-100',
   };
 
+  const priorityLabels = {
+    LOW: 'Baixa',
+    MEDIUM: 'Média',
+    HIGH: 'Alta',
+    URGENT: 'Urgente',
+  };
 
   const statusLabels: Record<TaskStatus, string> = {
     TODO: 'A Fazer',
@@ -58,6 +64,11 @@ export function TaskDetail({ task, open, onClose }: TaskDetailProps) {
     [currentTask.status]
   );
 
+  const otherPriorities = useMemo(
+    () => (['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).filter(p => p !== currentTask.priority),
+    [currentTask.priority]
+  );
+
   const handleChangeStatus = async (newStatus: TaskStatus) => {
     try {
       await updateTask({ id: currentTask.id, status: newStatus });
@@ -65,6 +76,16 @@ export function TaskDetail({ task, open, onClose }: TaskDetailProps) {
       toast.success(`Status atualizado para ${statusLabels[newStatus]}`);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Falha ao atualizar status');
+    }
+  };
+
+  const handleChangePriority = async (newPriority: typeof currentTask.priority) => {
+    try {
+      await updateTask({ id: currentTask.id, priority: newPriority });
+      setCurrentTask(prev => ({ ...prev, priority: newPriority }));
+      toast.success(`Prioridade atualizada para ${priorityLabels[newPriority]}`);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Falha ao atualizar prioridade');
     }
   };
 
@@ -165,9 +186,26 @@ export function TaskDetail({ task, open, onClose }: TaskDetailProps) {
               <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Prioridade</span>
-                  <Badge className={priorityColors[currentTask.priority]}>
-                    {currentTask.priority}
-                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={priorityColors[currentTask.priority] + ' h-7 gap-1'}
+                        disabled={isPending}
+                      >
+                        {priorityLabels[currentTask.priority]}
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {otherPriorities.map((p) => (
+                        <DropdownMenuItem key={p} onClick={() => handleChangePriority(p)}>
+                          {priorityLabels[p]}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="h-px bg-border" />

@@ -38,8 +38,7 @@ export class NotificationController {
   @Get()
   @ApiOperation({ summary: 'Listar notificações do usuário logado' })
   async getNotifications(@Req() req: any) {
-    const userId = req.user?.userId || req.user?.sub;
-
+    const userId = req.user?.id;
     try {
       const result = await firstValueFrom(
         this.notificationClient.send<
@@ -56,17 +55,16 @@ export class NotificationController {
     }
   }
 
-  @Patch(':id/read')
-  @ApiOperation({ summary: 'Marcar notificação como lida' })
-  async markAsRead(@Param('id') id: string, @Req() req: any) {
-    const userId = req.user?.userId || req.user?.sub;
-
+  @Patch('mark-all-read')
+  @ApiOperation({ summary: 'Marcar todas as notificações como lidas' })
+  async markAllAsRead(@Req() req: any) {
+    const userId = req.user?.id;
     try {
       const result = await firstValueFrom(
-        this.notificationClient.send<Result<void>>('notification.mark.read', {
-          notificationId: id,
-          userId,
-        }),
+        this.notificationClient.send<Result<void>>(
+          'notification.mark.all.read',
+          { userId },
+        ),
       );
 
       if (result?.ok) return { ok: true };
@@ -78,17 +76,17 @@ export class NotificationController {
     }
   }
 
-  @Patch('mark-all-read')
-  @ApiOperation({ summary: 'Marcar todas as notificações como lidas' })
-  async markAllAsRead(@Req() req: any) {
-    const userId = req.user?.userId || req.user?.sub;
+  @Patch(':id/read')
+  @ApiOperation({ summary: 'Marcar notificação como lida' })
+  async markAsRead(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.id;
 
     try {
       const result = await firstValueFrom(
-        this.notificationClient.send<Result<void>>(
-          'notification.mark.all.read',
-          { userId },
-        ),
+        this.notificationClient.send<Result<void>>('notification.mark.read', {
+          notificationId: id,
+          userId,
+        }),
       );
 
       if (result?.ok) return { ok: true };
