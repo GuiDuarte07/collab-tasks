@@ -41,7 +41,8 @@ async function bootstrap() {
 
   const port = 3001;
 
-  await app.listen(port);
+  // Bind to 0.0.0.0 to be reachable from other containers in Docker
+  await app.listen(port, '0.0.0.0');
   app.getHttpAdapter().getInstance();
 
   // Logs informativos via Winston

@@ -79,6 +79,13 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      // Recria a conexão WebSocket ao reidratar o estado da store
+      onRehydrateStorage: () => (state) => {
+        const token = state?.accessToken || localStorage.getItem("accessToken");
+        if (token) {
+          initSocket(token);
+        }
+      },
     }
   )
 );

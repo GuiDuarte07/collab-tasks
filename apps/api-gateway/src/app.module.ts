@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { TaskModule } from './task/task.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { TaskModule } from './task/task.module';
     }),
     AuthModule,
     TaskModule,
+    RealtimeModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

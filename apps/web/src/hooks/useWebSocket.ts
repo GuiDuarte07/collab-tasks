@@ -18,12 +18,12 @@ export const useWebSocket = () => {
     if (!socket) return;
 
     const handleConnect = () => {
-      console.log("WebSocket connected");
+      console.log("WebSocket conectado");
       setIsConnected(true);
     };
 
     const handleDisconnect = () => {
-      console.log("WebSocket disconnected");
+      console.log("WebSocket desconectado");
       setIsConnected(false);
     };
 
@@ -31,6 +31,7 @@ export const useWebSocket = () => {
       console.log("Task created event:", event);
       toast.success(`Nova tarefa criada: ${event.title}`);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     };
 
     const handleTaskUpdated = (event: TaskUpdatedEvent) => {
@@ -38,6 +39,7 @@ export const useWebSocket = () => {
       toast.info(`Tarefa atualizada: ${event.title}`);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task", event.taskId] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     };
 
     const handleCommentNew = (event: CommentCreatedEvent) => {
@@ -45,10 +47,14 @@ export const useWebSocket = () => {
       toast.info("Novo comentário adicionado");
       queryClient.invalidateQueries({ queryKey: ["comments", event.taskId] });
       queryClient.invalidateQueries({ queryKey: ["task", event.taskId] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", (err) => {
+      console.error("Erro de conexão do WebSocket:", err);
+    });
     socket.on("task:created", handleTaskCreated);
     socket.on("task:updated", handleTaskUpdated);
     socket.on("comment:new", handleCommentNew);
@@ -56,6 +62,7 @@ export const useWebSocket = () => {
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error");
       socket.off("task:created", handleTaskCreated);
       socket.off("task:updated", handleTaskUpdated);
       socket.off("comment:new", handleCommentNew);

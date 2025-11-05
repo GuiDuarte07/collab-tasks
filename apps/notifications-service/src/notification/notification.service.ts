@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotificationEntity } from '../entities/notification.entity';
@@ -15,7 +17,56 @@ export class NotificationService {
   constructor(
     @InjectRepository(NotificationEntity)
     private readonly notificationRepo: Repository<NotificationEntity>,
+    private readonly http: HttpService,
   ) {}
+
+  private get gatewayBaseUrl(): string {
+    return (
+      process.env.NOTIFY_GATEWAY_BASE_URL ||
+      process.env.API_GATEWAY_URL ||
+      'http://api-gateway:3001'
+    );
+  }
+
+  private get internalSecret(): string | undefined {
+    return process.env.NOTIFY_INTERNAL_SECRET;
+  }
+
+  private async postToGateway(path: string, payload: unknown): Promise<void> {
+    const candidates = [
+      this.gatewayBaseUrl,
+      // fallback para ambiente local fora do Docker
+      'http://localhost:3001',
+    ].filter(Boolean);
+
+    const errors: string[] = [];
+
+    for (const base of candidates) {
+      const url = `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+      try {
+        await lastValueFrom(
+          this.http.post(url, payload, {
+            headers: this.internalSecret
+              ? { 'x-internal-secret': this.internalSecret }
+              : undefined,
+            timeout: 2500,
+          }),
+        );
+        return; // sucesso
+      } catch (err: unknown) {
+        const msg =
+          typeof err === 'object' && err && 'toString' in err
+            ? // eslint-disable-next-line @typescript-eslint/no-base-to-string
+              String(err)
+            : 'erro desconhecido';
+        errors.push(`${url} -> ${msg}`);
+      }
+    }
+
+    this.logger.warn(
+      `Falha ao encaminhar evento para API Gateway (tentativas: ${errors.length}): ${errors.join(' | ')}`,
+    );
+  }
 
   async handleTaskCreated(event: TaskCreatedEvent): Promise<void> {
     this.logger.log(
@@ -42,6 +93,9 @@ export class NotificationService {
         `${notifications.length} notificação(ões) criada(s) para task.create`,
       );
     }
+
+    // encaminhar para o gateway emitir via Socket.IO
+    await this.postToGateway('/api/internal/notify/task-created', event);
   }
 
   async handleTaskUpdated(event: TaskUpdatedEvent): Promise<void> {
@@ -83,6 +137,9 @@ export class NotificationService {
         `${notifications.length} notificação(ões) criada(s) para task.update`,
       );
     }
+
+    // encaminhar para o gateway emitir via Socket.IO
+    await this.postToGateway('/api/internal/notify/task-updated', event);
   }
 
   async handleCommentCreated(event: CommentCreatedEvent): Promise<void> {
@@ -109,5 +166,42 @@ export class NotificationService {
         `${notifications.length} notificação(ões) criada(s) para task.comment`,
       );
     }
+
+    // encaminhar para o gateway emitir via Socket.IO
+    await this.postToGateway('/api/internal/notify/comment-new', event);
+  }
+
+  async getUserNotifications(userId: string): Promise<{
+    notifications: NotificationEntity[];
+    unreadCount: number;
+  }> {
+    const notifications = await this.notificationRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 50, // últimas 50
+    });
+
+    const unreadCount = await this.notificationRepo.count({
+      where: { userId, read: false },
+    });
+
+    return { notifications, unreadCount };
+  }
+
+  async markAsRead(notificationId: string, userId: string): Promise<void> {
+    const notification = await this.notificationRepo.findOne({
+      where: { id: notificationId, userId },
+    });
+
+    if (!notification) {
+      throw new Error('Notificação não encontrada');
+    }
+
+    notification.read = true;
+    await this.notificationRepo.save(notification);
+  }
+
+  async markAllAsRead(userId: string): Promise<void> {
+    await this.notificationRepo.update({ userId, read: false }, { read: true });
   }
 }

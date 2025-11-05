@@ -20,15 +20,15 @@ export const initSocket = (token: string): Socket => {
   });
 
   socket.on("connect", () => {
-    console.log("✅ WebSocket connected");
+    console.log("✅ WebSocket conectado");
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ WebSocket disconnected");
+    console.log("❌ WebSocket desconectado");
   });
 
   socket.on("connect_error", (error) => {
-    console.error("WebSocket connection error:", error);
+    console.error("Erro de conexão do WebSocket:", error);
   });
 
   return socket;
