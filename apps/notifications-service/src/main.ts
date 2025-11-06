@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { LoggerService } from '@nestjs/common';
 import { createLogger } from '@repo/shared-config';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
   const logger: LoggerService = createLogger({
@@ -26,6 +27,18 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
+
+  // Executa migrations automaticamente (default true).
+  const autoRun = (process.env.AUTO_RUN_MIGRATIONS ?? 'true') === 'true';
+  if (autoRun) {
+    const dataSource = app.get(DataSource);
+    try {
+      await dataSource.runMigrations();
+      logger.log('Migrations executadas (notifications-service).', 'Bootstrap');
+    } catch (err) {
+      logger.error('Falha ao executar migrations', err, 'Bootstrap');
+    }
+  }
 
   const port = 3004;
   await app.listen(port);

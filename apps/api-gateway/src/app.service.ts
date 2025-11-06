@@ -5,9 +5,9 @@ export class AppService {
   getHealth() {
     return [
       {
-        status: process.env.RABBITMQ_URL,
+        status: 'working',
         timestamp: new Date().toISOString(),
-        service: 'api-gateway',
+        //service: 'api-gateway',
       },
     ];
   }

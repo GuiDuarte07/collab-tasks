@@ -14,6 +14,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
   autoLoadEntities: true,
   synchronize: false,
   migrations: [__dirname + '/../../migrations/*.{ts,js}'],
+  migrationsTableName: 'notification_migrations',
   logging: true,
 };
 

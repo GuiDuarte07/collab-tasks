@@ -27,10 +27,16 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  // roda migrations no bootstrap quando RUN_MIGRATIONS=true
-  if (process.env.RUN_MIGRATIONS === 'true') {
+  // Executa migrations automaticamente se habilitado (default: true)
+  const autoRun = (process.env.AUTO_RUN_MIGRATIONS ?? 'true') === 'true';
+  if (autoRun) {
     const dataSource = app.get(DataSource);
-    await dataSource.runMigrations();
+    try {
+      await dataSource.runMigrations();
+      logger.log('Migrations executadas (task-service).', 'Bootstrap');
+    } catch (err) {
+      logger.error('Falha ao executar migrations', err, 'Bootstrap');
+    }
   }
 
   const port = 3003;
