@@ -11,7 +11,7 @@ RUN corepack enable
 WORKDIR /app
 
 # -------------------------------------
-# 2 -  Dependência do Turbo (para podar dependências)
+# 2 - Dependência do Turbo (para podar dependências)
 # -------------------------------------
 FROM base AS pruner
 RUN apk add --no-cache libc6-compat
@@ -47,8 +47,9 @@ WORKDIR /app
 COPY --from=installer /app ./
 COPY --from=pruner /app/out/full/ ./
 
-# Compila a aplicação (usa o turbo build do monorepo)
-RUN pnpm turbo run build --filter=auth-service
+# Compila a aplicação diretamente no diretório do serviço
+WORKDIR /app/apps/auth-service
+RUN pnpm run build && ls -la dist/
 
 # -------------------------------------
 # 5 - Runner (imagem final e leve)
@@ -57,16 +58,22 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Copia apenas o necessário para runtime
-COPY --from=builder /app/apps/auth-service/dist ./dist
-COPY --from=builder /app/apps/auth-service/package.json ./
-
+# Copia estrutura do monorepo necessária para os symlinks
+COPY --from=installer /app/package.json ./package.json
+COPY --from=installer /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=installer /app/node_modules ./node_modules
+COPY --from=installer /app/packages ./packages
+
+# Copia o app compilado
+COPY --from=builder /app/apps/auth-service/dist ./apps/auth-service/dist
+COPY --from=builder /app/apps/auth-service/package.json ./apps/auth-service/package.json
+
+COPY --from=installer /app/apps/auth-service/node_modules ./apps/auth-service/node_modules
 
 # Segurança: evita que o app rode como root
 USER node
 
 EXPOSE 3002
 
-# Define o comando final de execução
-CMD ["node", "dist/main.js"]
+WORKDIR /app/apps/auth-service
+CMD ["node", "dist/src/main.js"]

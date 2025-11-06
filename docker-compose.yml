@@ -59,6 +59,17 @@ services:
       - db
       - rabbitmq
 
+  web:
+    container_name: web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - app_network
+
     # Postgres Database
   db:
     image: postgres:17.5-alpine3.21

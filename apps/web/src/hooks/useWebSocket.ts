@@ -33,14 +33,12 @@ export const useWebSocket = (options?: UseWebSocketOptions) => {
     };
 
     const handleTaskCreated = (event: TaskCreatedEvent) => {
-      console.log("Task created event:", event);
       toast.success(`Nova tarefa criada: ${event.title}`);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     };
 
     const handleTaskUpdated = (event: TaskUpdatedEvent) => {
-      console.log("Task updated event:", event);
       toast.info(`Tarefa atualizada: ${event.title}`);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task", event.taskId] });
@@ -48,7 +46,6 @@ export const useWebSocket = (options?: UseWebSocketOptions) => {
     };
 
     const handleCommentNew = (event: CommentCreatedEvent) => {
-      console.log("New comment event:", event);
       toast.info("Novo comentário adicionado");
       queryClient.invalidateQueries({ queryKey: ["comments", event.taskId] });
       queryClient.invalidateQueries({ queryKey: ["task", event.taskId] });

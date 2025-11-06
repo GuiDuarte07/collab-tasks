@@ -1,53 +1,84 @@
-# Turborepo-optimized Dockerfile for React/Vite frontend
+# -------------------------------------
+# 1 - Base image (com Node + corepack habilitado)
+# -------------------------------------
 FROM node:20-alpine AS base
 
-# Install pnpm and turbo
-RUN npm install -g pnpm@latest turbo@latest
+# Definimos diretórios padrão do PNPM e PATH
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files from root
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY turbo.json ./
+# -------------------------------------
+# 2 - Dependência do Turbo (para podar dependências)
+# -------------------------------------
+FROM base AS pruner
+RUN apk add --no-cache libc6-compat
+RUN pnpm add -g turbo
 
-# Copy all source code
 COPY . .
+RUN turbo prune --scope=web --docker
 
-# Install all dependencies
-ENV CI=true
-RUN pnpm install --no-frozen-lockfile
+# -------------------------------------
+# 3 - Instalador (instala dependências apenas do app e seus deps)
+# -------------------------------------
+FROM base AS installer
+RUN apk add --no-cache libc6-compat
 
-# Build shared types first using Turbo
-RUN turbo run build:types
+WORKDIR /app
 
-# Development stage
-FROM base AS development
+# Copia apenas o que é necessário para instalar deps
+COPY --from=pruner /app/out/json/ ./
+COPY --from=pruner /app/out/full/ ./
+
+# Instala dependências necessárias
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# -------------------------------------
+# 4 - Builder (build da aplicação Vite + React)
+# -------------------------------------
+FROM base AS builder
+RUN apk add --no-cache libc6-compat
+RUN pnpm add -g turbo
+
+WORKDIR /app
+
+COPY --from=installer /app ./
+COPY --from=pruner /app/out/full/ ./
+
+# Build da aplicação web (gera arquivos estáticos)
+RUN pnpm turbo run build --filter=web
+
+# -------------------------------------
+# 5 - Runner (nginx para servir arquivos estáticos)
+# -------------------------------------
+FROM node:20-alpine AS runner
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+# Copia node_modules (inclui vite para preview) e workspace metadata
+COPY --from=installer /app/pnpm-workspace.yaml ./
+COPY --from=installer /app/package.json ./
+COPY --from=installer /app/pnpm-lock.yaml ./
+COPY --from=installer /app/node_modules ./node_modules
+# Também precisamos do node_modules específico do pacote web (para binários como vite)
+COPY --from=installer /app/apps/web/node_modules ./apps/web/node_modules
+# Não precisamos dos pacotes fonte (packages/*) no estágio de preview,
+# pois o build já gerou artefatos em dist. Removido COPY dos packages.
+
+# Copia o app e o build estático
+COPY --from=builder /app/apps/web/dist ./apps/web/dist
+COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
+
+WORKDIR /app/apps/web
+
+# Servir via vite preview na porta 3000
 EXPOSE 3000
-ENV PORT=3000
-ENV NODE_ENV=development
-# Use Turbo to run the specific service
-CMD ["turbo", "run", "dev", "--filter=web"]
 
-# Production stage
-FROM base AS production
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+CMD ["pnpm", "run", "preview", "--host", "0.0.0.0", "--port", "3000"]
 
-# Build the web app using Turbo
-RUN turbo run build --filter=web
-
-# Set ownership
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
-EXPOSE 3000
-ENV PORT=3000
-ENV NODE_ENV=production
-
-# For production, we'll serve the built files using a simple HTTP server
-# Install serve to serve static files
-RUN npm install -g serve
-
-# Serve the built files
-CMD ["serve", "-s", "apps/web/dist", "-l", "3000"]
