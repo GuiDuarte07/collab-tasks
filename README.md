@@ -5,27 +5,35 @@
 
 ## 🧭 Sumário
 
-1. [Visão Geral](#visão-geral)
-2. [Arquitetura & Estrutura do Monorepo](#arquitetura--estrutura-do-monorepo)
-3. [Setup e Execução](#setup-e-execução)
+<!-- TOC usa anchors ASCII estáveis para evitar problemas com emojis/acentos -->
+
+1. [Visão Geral](#visao-geral)
+2. [Arquitetura & Estrutura do Monorepo](#arquitetura-estrutura-do-monorepo)
+3. [Setup e Execução](#setup-e-execucao)
 4. [Detalhamento dos Requisitos](#detalhamento-dos-requisitos)
-   - [Autenticação & Gateway](#autenticação--gateway)
-   - [Tarefas & Comentários](#tarefas--comentários)
-   - [Notificações & WebSocket](#notificações--websocket)
-   - [Infraestrutura & Docker](#infraestrutura--docker)
-5. [Frontend (React + TanStack Router + shadcn/ui)](#frontend-react--tanstack-router--shadcnui)
-6. [Backend (Nest.js + Microservices)](#backend-nestjs--microservices)
+  - [Autenticação & Gateway](#autenticacao-gateway)
+  - [Tarefas & Comentários](#tarefas-comentarios)
+  - [Notificações & WebSocket](#notificacoes-websocket)
+  - [Infraestrutura & Docker](#infraestrutura-docker)
+5. [Frontend (React + TanStack Router + shadcn/ui)](#frontend)
+6. [Backend (Nest.js + Microservices)](#backend)
 7. [Mensageria (RabbitMQ)](#mensageria-rabbitmq)
-8. [Banco de Dados & Migrations](#banco-de-dados--migrations)
-9. [Validação & Segurança](#validação--segurança)
-10. [Logs, Rate Limiting & Health Checks](#logs-rate-limiting--health-checks)
-11. [Decisões Técnicas e Trade-offs](#decisões-técnicas-e-trade-offs)
+8. [Banco de Dados & Migrations](#banco-de-dados-migrations)
+9. [Validação & Segurança](#validacao-seguranca)
+10. [Logs, Rate Limiting & Health Checks](#logs-rate-limiting-health-checks)
+11. [Decisões Técnicas e Trade-offs](#decisoes-tecnicas-tradeoffs)
 12. [Desafios do Projeto](#desafios-do-projeto)
-13. [Problemas Conhecidos e Melhorias Futuras](#problemas-conhecidos-e-melhorias-futuras)
-14. [Tempo Gasto e Organização do Desenvolvimento](#tempo-gasto-e-organização-do-desenvolvimento)
-15. [Referências e Materiais de Apoio](#referências-e-materiais-de-apoio)
+13. [Problemas Conhecidos e Melhorias Futuras](#problemas-conhecidos-melhorias-futuras)
+14. [Tempo Gasto e Organização do Desenvolvimento](#tempo-gasto-organizacao)
+15. [Considerações](#consideracoes)
+16. [Pontos Técnicos](#pontos-tecnicos)
+   - [Back-End](#pontos-tecnicos-backend)
+   - [Front-End](#pontos-tecnicos-frontend)
+17. [Referências e Materiais de Apoio](#referencias-materiais)
 
 ---
+
+<div id="visao-geral"></div>
 
 ## 🧩 Visão Geral
 
@@ -38,6 +46,8 @@ O sistema foi construído com base na stack obrigatória:
 - **Infraestrutura:** Docker, docker-compose e monorepo com Turborepo
 
 ---
+
+<div id="arquitetura-estrutura-do-monorepo"></div>
 
 ## 🏗️ Arquitetura & Estrutura do Monorepo
 
@@ -80,6 +90,8 @@ Auth Service   Task Service   Notifications Service
 
 ---
 
+<div id="setup-e-execucao"></div>
+
 ## ⚙️ Setup e Execução
 
 ### 1. Pré-requisitos
@@ -97,10 +109,17 @@ pnpm install
 ### 3. Executar com Docker Compose
 
 ```bash
-docker-compose up --build
+docker-compose -f docker-compose.yml --env-file .env  up --build -d
 ```
 
-### 4. Endpoints principais
+### 4. Executar com turbo run dev
+
+```bash
+docker-compose -f docker-compose.dev.yml --env-file .env  up --build -d
+turbo run dev
+```
+
+### 5. Endpoints principais
 
 - **Frontend:** http://localhost:3000
 - **API Gateway (Swagger):** http://localhost:3001/api/docs
@@ -108,6 +127,9 @@ docker-compose up --build
 - **Postgres:** localhost:5432
 
 ---
+
+<div id="detalhamento-dos-requisitos"></div>
+<div id="autenticacao-gateway"></div>
 
 ## 🔐 Autenticação & Gateway
 
@@ -130,6 +152,8 @@ docker-compose up --build
 
 ---
 
+<div id="tarefas-comentarios"></div>
+
 ## ✅ Tarefas & Comentários
 
 - **CRUD:** `/api/tasks`
@@ -145,6 +169,8 @@ docker-compose up --build
 - `task.comment.created`
 
 ---
+
+<div id="notificacoes-websocket"></div>
 
 ## 🔔 Notificações & WebSocket
 
@@ -165,6 +191,8 @@ docker-compose up --build
 
 ---
 
+<div id="infraestrutura-docker"></div>
+
 ## 🐳 Infraestrutura & Docker
 
 - **Banco:** PostgreSQL 17 (volume persistente)
@@ -178,6 +206,8 @@ docker-compose up --build
 - `rabbitmq_data`
 
 ---
+
+<div id="frontend"></div>
 
 ## 💻 Frontend (React + TanStack Router + shadcn/ui)
 
@@ -201,6 +231,8 @@ docker-compose up --build
 
 ---
 
+<div id="backend"></div>
+
 ## ⚙️ Backend (Nest.js + Microservices)
 
 Cada microserviço é modular e isolado:
@@ -220,6 +252,8 @@ Cada microserviço é modular e isolado:
 
 ---
 
+<div id="mensageria-rabbitmq"></div>
+
 ## 📡 Mensageria (RabbitMQ)
 
 **Filas:**
@@ -233,6 +267,8 @@ Cada microserviço é modular e isolado:
 **Persistência:** mensagens salvas até confirmação de consumo
 
 ---
+
+<div id="banco-de-dados-migrations"></div>
 
 ## 🗄️ Banco de Dados & Migrations
 
@@ -251,6 +287,8 @@ pnpm run migration:revert
 
 ---
 
+<div id="validacao-seguranca"></div>
+
 ## 🔒 Validação & Segurança
 
 - Hash de senha com **bcrypt**
@@ -261,6 +299,8 @@ pnpm run migration:revert
 
 ---
 
+<div id="logs-rate-limiting-health-checks"></div>
+
 ## 📊 Logs, Rate Limiting & Health Checks
 
 - **Logs:** Winston (JSON + timestamps)
@@ -269,6 +309,8 @@ pnpm run migration:revert
 - **CORS:** permite qualquer origem no momento
 
 ---
+
+<div id="decisoes-tecnicas-tradeoffs"></div>
 
 ## 🧠 Decisões Técnicas e Trade-offs
 
@@ -284,6 +326,8 @@ pnpm run migration:revert
 
 
 ---
+
+<div id="desafios-do-projeto"></div>
 
 ## 🚧 Desafios do Projeto
 
@@ -339,6 +383,8 @@ Para desenvolvimento, achei mais confortável programar fora do container Docker
 
 ---
 
+<div id="problemas-conhecidos-melhorias-futuras"></div>
+
 ## 🧩 Problemas Conhecidos e Melhorias Futuras
 
 - [ ] Adicionar testes unitários com Jest
@@ -347,6 +393,8 @@ Para desenvolvimento, achei mais confortável programar fora do container Docker
 - [ ] Melhorar a organização de interfaces distruibuidas
 
 ---
+
+<div id="tempo-gasto-organizacao"></div>
 
 ## ⏱️ Tempo Gasto e Organização do Desenvolvimento
 
@@ -363,6 +411,8 @@ Para desenvolvimento, achei mais confortável programar fora do container Docker
 
 ---
 
+<div id="consideracoes"></div>
+
 ## Considerações
 
 Construir um sistema colaborativo de gestão de tarefas foi um desafio bastante interessante, o desenvolvimento do mesmo foi inspirado em soluções como o Jira. Foi um desafio amplo e, ao mesmo tempo, muito enriquecedor. Grande parte das dificuldades veio de tópicos novos para mim: arquitetura em monorepo, uso efetivo do Turborepo, desenho e isolamento de microserviços e configuração da comunicação assíncrona entre eles. 
@@ -372,6 +422,8 @@ Ao longo do desenvolvimento fui refinando a experiência: estilização dos come
 Considero o resultado atual consistente para o tempo investido e pretendo continuar avançando: adicionar testes automatizados, aprimorar observabilidade e segurança, e incluir novas funcionalidades como criação de equipes, lista de contatos/seguidores, envio de e‑mails e outros recursos colaborativos. Foi um processo de muito aprendizado e tornou-se uma base sólida para evolução futura.
 
 ---
+
+<div id="referencias-materiais"></div>
 
 ## 📚 Referências e Materiais de Apoio
 
@@ -390,6 +442,9 @@ Considero o resultado atual consistente para o tempo investido e pretendo contin
 
 # Pontos Técnicos
 
+<div id="pontos-tecnicos"></div>
+<div id="pontos-tecnicos-backend"></div>
+
 ## Back-End
 
 ### Jwt Guard
@@ -399,21 +454,16 @@ Responsável por validar o header `Authorization` na requisição:
   <img src="./readme-imgs/jwt-guard.png" alt="Jwt Guard" width="560" />
  </p>
 
-### DTOs com validação
-Exemplo de DTO enriquecido com tags de documentação swagger e validações via class-validator
-
-<p align="center">
-  <img src="./readme-imgs/registerDTO.png" alt="Jwt Guard" width="560" />
- </p>
-
  ### DTOs com validação
 Exemplo de DTO enriquecido com tags de documentação swagger e validações via class-validator
 
 <p align="center">
-  <img src="./readme-imgs/registerDTO.png" alt="Jwt Guard" width="560" />
+  <img src="./readme-imgs/registerDTO.png" alt="Register DTO" width="560" />
  </p>
 
 Outros pontos são o uso de Controllers, Services, decorators, rxjs, ClientProxy para comunicação entre serviços, health check, etc
+
+<div id="pontos-tecnicos-frontend"></div>
 
 ## Front-End
 
