@@ -99,7 +99,7 @@ Auth Service   Task Service   Notifications Service
 - Docker + Docker Compose
 - Node.js 20+
 - PNPM (ou npm/yarn)
-
+- .env (no final do readme)
 ### 2. Instalação
 
 ```bash
@@ -497,3 +497,45 @@ Tela de criação de tarefas:
  </p>
 
  Além de outras implentações como uso de TipTap para Rich Text, shadcn para os componentes, tailwind, e socket.io para comunicação em tempo real (useWebSocket). 
+
+
+
+### Exemplo de .env necessário para rodar o app (colocar na raiz do projeto):
+
+```.env
+# Ambiente
+NODE_ENV=development
+
+# -----------------------------
+# Banco de Dados Postgres
+# -----------------------------
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=collabtasks_db
+POSTGRES_PORT=5432
+DB_HOST=db
+# URL para desenvolvimento local
+DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+# URL para docker
+DATABASE_URL_DOCKER=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}
+
+# -----------------------------
+# RabbitMQ
+# -----------------------------
+RABBITMQ_DEFAULT_USER=admin
+RABBITMQ_DEFAULT_PASS=admin
+RABBITMQ_PORT=5672
+RABBITMQ_MANAGEMENT_PORT=15672
+# URL 
+RABBITMQ_URL_DOCKER=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:${RABBITMQ_PORT}
+RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:${RABBITMQ_PORT}
+
+# -----------------------------
+# JWT e outras configs
+# -----------------------------
+JWT_SECRET=8cef403b89237718638c2aea3530a29ddf5e112bbcc1a336
+JWT_ACCESS_TOKEN_EXPIRES_IN=15m
+NOTIFY_INTERNAL_SECRET=d21D3fXsdf!23
+
+
+```
