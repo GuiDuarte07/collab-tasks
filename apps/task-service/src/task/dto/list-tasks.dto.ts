@@ -1,8 +1,8 @@
 export class ListTasksDto {
   page?: number;
   size?: number;
-  status?: 'backlog' | 'todo' | 'in_progress' | 'done';
-  priority?: 'low' | 'medium' | 'high';
+  status?: 'todo' | 'in_progress' | 'review' | 'done';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   search?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'deadline' | 'priority' | 'status';
   sortOrder?: 'ASC' | 'DESC';

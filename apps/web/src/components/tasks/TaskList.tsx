@@ -34,7 +34,7 @@ export function TaskList() {
     page: 1,
     size: 20,
     search: '',
-    status: undefined as 'backlog' | 'todo' | 'in_progress' | 'done' | undefined,
+    status: undefined as 'todo' | 'in_progress' | 'review' | 'done' | undefined,
     priority: undefined as 'low' | 'medium' | 'high' | undefined,
     sortBy: 'createdAt' as const,
     sortOrder: 'DESC' as const,
@@ -104,9 +104,9 @@ export function TaskList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="backlog">Backlog</SelectItem>
             <SelectItem value="todo">A Fazer</SelectItem>
             <SelectItem value="in_progress">Em Progresso</SelectItem>
+            <SelectItem value="review">Em Revisão</SelectItem>
             <SelectItem value="done">Concluído</SelectItem>
           </SelectContent>
         </Select>

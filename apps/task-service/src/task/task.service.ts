@@ -225,15 +225,14 @@ export class TaskService {
 
       // Filtros adicionais
       if (filters?.status) {
-        queryBuilder.andWhere('task.status = :status', {
-          status: filters.status,
-        });
+        // Normalizar para enum interno (uppercase)
+        const status = String(filters.status).toUpperCase();
+        queryBuilder.andWhere('task.status = :status', { status });
       }
 
       if (filters?.priority) {
-        queryBuilder.andWhere('task.priority = :priority', {
-          priority: filters.priority,
-        });
+        const priority = String(filters.priority).toUpperCase();
+        queryBuilder.andWhere('task.priority = :priority', { priority });
       }
 
       if (filters?.search) {

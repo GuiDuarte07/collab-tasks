@@ -5,7 +5,7 @@ import type { Task } from "@/types";
 interface TaskFilters {
   page?: number;
   size?: number;
-  status?: "backlog" | "todo" | "in_progress" | "done";
+  status?: "todo" | "in_progress" | "review" | "done";
   priority?: "low" | "medium" | "high";
   search?: string;
   sortBy?: "createdAt" | "updatedAt" | "deadline" | "priority" | "status";

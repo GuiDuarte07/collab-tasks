@@ -27,19 +27,19 @@ export class ListTasksDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por status',
-    enum: ['backlog', 'todo', 'in_progress', 'done'],
+    enum: ['todo', 'in_progress', 'review', 'done'],
   })
   @IsOptional()
-  @IsIn(['backlog', 'todo', 'in_progress', 'done'])
-  status?: 'backlog' | 'todo' | 'in_progress' | 'done';
+  @IsIn(['todo', 'in_progress', 'review', 'done'])
+  status?: 'todo' | 'in_progress' | 'review' | 'done';
 
   @ApiPropertyOptional({
     description: 'Filtrar por prioridade',
-    enum: ['low', 'medium', 'high'],
+    enum: ['low', 'medium', 'high', 'urgent'],
   })
   @IsOptional()
-  @IsIn(['low', 'medium', 'high'])
-  priority?: 'low' | 'medium' | 'high';
+  @IsIn(['low', 'medium', 'high', 'urgent'])
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
 
   @ApiPropertyOptional({ description: 'Buscar no título ou descrição' })
   @IsOptional()
