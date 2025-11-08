@@ -458,7 +458,7 @@ Responsável por validar o header `Authorization` na requisição:
 Exemplo de DTO enriquecido com tags de documentação swagger e validações via class-validator
 
 <p align="center">
-  <img src="./readme-imgs/registerDTO.png" alt="Register DTO" width="560" />
+  <img src="./readme-imgs/RegisterDTO.png" alt="Register DTO" width="560" />
  </p>
 
 Outros pontos são o uso de Controllers, Services, decorators, rxjs, ClientProxy para comunicação entre serviços, health check, etc
@@ -536,6 +536,6 @@ RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:$
 JWT_SECRET=8cef403b89237718638c2aea3530a29ddf5e112bbcc1a336
 JWT_ACCESS_TOKEN_EXPIRES_IN=15m
 NOTIFY_INTERNAL_SECRET=d21D3fXsdf!23
-
+AUTO_RUN_MIGRATIONS=true
 
 ```
